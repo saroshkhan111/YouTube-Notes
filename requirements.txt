@@ -1,6 +1,6 @@
 streamlit
 google-generativeai
-youtube-transcript-api==1.2.2
+youtube-transcript-api==1.2.4
 langchain
 langchain-google-genai
 langchain-chroma
@@ -14,9 +14,12 @@ python-dotenv
 streamlit
 langchain_experimental
 sentence-transformers
+torchvision
 langchain_chroma
 langchainhub
 pypdf
 rapidocr-onnxruntime
 requests
 chromadb
+langchain-openai
+langchain-groq

@@ -1,217 +1,156 @@
-# 🎬 YouTube RAG Agent
+# 🎬 VidSynth AI
 
-Transform any YouTube video into structured notes, key topics, or an interactive chatbot using AI. Built with Streamlit, LangChain, and Google Gemini.
-
-## ✨ Features
-
-- **📝 Smart Notes Generation**: Automatically extract structured, concise notes from any YouTube video
-- **🔍 Key Topics Extraction**: Get the 5 most important topics discussed in the video
-- **💬 Chat with Video**: Ask questions about the video content using RAG (Retrieval Augmented Generation)
-- **🌍 Multi-Language Support**: Process videos in any language (auto-translates to English)
-- **🆓 100% Free**: Uses local embeddings (HuggingFace) - no API costs for vector storage
-- **🔒 Privacy First**: All embeddings are created locally on your machine
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Python 3.12 or higher
-- Google Gemini API key (free tier available)
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repo-url>
-   cd youtube
-   ```
-
-2. **Create and activate virtual environment**
-   ```bash
-   python -m venv .venv
-   
-   # On Windows
-   .venv\Scripts\activate
-   
-   # On macOS/Linux
-   source .venv/bin/activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Set up environment variables**
-   
-   Create a `.env` file in the project root directory:
-   ```bash
-   touch .env
-   ```
-   
-   Add your Google Gemini API key to the `.env` file:
-   ```
-   GOOGLE_API_KEY=your_api_key_here
-   ```
-   
-   **How to get your API key:**
-   - Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
-   - Sign in with your Google account
-   - Click "Create API Key"
-   - Copy the key and paste it in your `.env` file
-
-5. **Run the application**
-   ```bash
-   streamlit run app.py
-   ```
-
-The app will automatically open in your browser at `http://localhost:8501`
-
-## 📖 How to Use
-
-### 1. Generate Notes
-
-1. Paste a YouTube URL in the sidebar
-2. Enter the video language code (e.g., `en` for English, `hi` for Hindi, `es` for Spanish)
-3. Select "Notes For You"
-4. Click "✨ Start Processing"
-5. Wait for the AI to extract topics and generate notes
-
-### 2. Chat with Video
-
-1. Paste a YouTube URL in the sidebar
-2. Enter the video language code
-3. Select "Chat with Video"
-4. Click "✨ Start Processing"
-5. Once processing is complete, ask questions about the video content in the chat interface
-
-## ⚙️ Configuration
-
-### Language Codes
-
-Use ISO 639-1 language codes:
-- English: `en`
-- Hindi: `hi`
-- Spanish: `es`
-- French: `fr`
-- German: `de`
-- Japanese: `ja`
-- Korean: `ko`
-- [Full list of language codes](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
-
-### GPU Support (Optional)
-
-If you have an NVIDIA GPU, you can speed up embedding generation:
-
-1. Install PyTorch with CUDA support:
-   ```bash
-   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-   ```
-
-2. Edit `supporting_functions.py` line 165:
-   ```python
-   model_kwargs={'device': 'cuda'}  # Change from 'cpu' to 'cuda'
-   ```
-
-## ⚠️ Important Notes & Tips
-
-### First Run Will Be Slow
-- **First time only**: The app downloads the `all-MiniLM-L6-v2` embedding model (~80MB)
-- This happens automatically and only once
-- The model is cached locally for future use
-- Subsequent runs will be much faster
-
-### Local Processing
-- **Embeddings are created locally** using HuggingFace models
-- No external API calls for vector storage (completely free!)
-- Only Google Gemini API is used for text generation (translation, notes, chat responses)
-- Your data stays on your machine during embedding creation
-
-### Rate Limits
-- Google Gemini free tier has rate limits for text generation
-- If you hit limits, wait a few minutes and try again
-- The embedding model has **no rate limits** since it runs locally
-
-### Video Length
-- Very long videos (3+ hours) may take several minutes to process
-- Processing time depends on video length and your hardware
-
-### Memory Usage
-- Local embedding model uses ~500MB RAM
-- Vector store size depends on video length
-- Recommended: At least 4GB RAM available
-
-## 🛠️ Tech Stack
-
-- **Frontend**: Streamlit
-- **LLM**: Google Gemini 2.5 Flash Lite
-- **Embeddings**: HuggingFace Sentence Transformers (all-MiniLM-L6-v2)
-- **Vector Store**: ChromaDB
-- **Framework**: LangChain
-- **Transcription**: YouTube Transcript API
-
-## 📁 Project Structure
-
-```
-youtube/
-├── app.py                    # Main Streamlit application
-├── supporting_functions.py   # Core functionality (transcript, embeddings, RAG)
-├── requirements.txt          # Python dependencies
-├── pyproject.toml           # Project configuration
-├── .env                     # Environment variables (API keys) - CREATE THIS
-├── .gitignore              # Git ignore rules
-└── README.md               # This file
-```
-
-## 🐛 Troubleshooting
-
-### "No module named 'sentence_transformers'"
-```bash
-pip install sentence-transformers
-```
-
-### "Error fetching transcript"
-- Check if the video has captions/subtitles available
-- Verify the language code is correct
-- Try a different video
-
-### "Quota exceeded" for Google Gemini
-- You've hit the free tier rate limit
-- Wait a few minutes or upgrade your API plan
-- The embedding creation won't be affected (runs locally)
-
-### "Failed to create vector store"
-- Ensure you have enough disk space (~500MB)
-- Check if `chromadb` is installed: `pip install chromadb`
-- Restart the application
-
-### Slow Performance
-- First run downloads the embedding model (one-time ~80MB)
-- Close other applications to free up RAM
-- Consider using GPU acceleration (see Configuration section)
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to:
-- Report bugs
-- Suggest new features
-- Submit pull requests
-
-
-## 🙏 Acknowledgments
-
-- Google Gemini for powerful LLM capabilities
-- HuggingFace for free local embeddings
-- Streamlit for the amazing web framework
-- LangChain for RAG implementation
-
-## 📧 Support
-
-If you encounter any issues or have questions:
-1. Check the Troubleshooting section above
-2. Search for existing issues on GitHub
-3. Create a new issue with detailed information
+> Turn any YouTube video into structured notes, key topics, and an AI chatbot — without watching the whole thing.
 
 ---
 
-**Made using  Open Source tools**
+## The Problem
+
+You open a 2-hour lecture. You need one concept from it.
+You scrub through. You miss it. You rewatch. You take notes while watching — and miss more.
+
+Most people waste hours just *finding* what they need inside a video.
+
+**VidSynth AI solves this.** Paste a YouTube link. In a minute, you get clear notes written like a topper student wrote them, the 5 most important topics, and a chatbot you can ask anything about the video.
+
+---
+
+## What It Does
+
+| Feature | How it helps |
+|---|---|
+| **Topper-style notes** | AI reads the transcript and writes notes the way a good student would — with explanations, examples, and tips |
+| **5 key topics** | Quick overview of what the video actually covers |
+| **Chat with video** | Ask anything — "what did he say about X?" — get a direct answer |
+| **Paste transcript** | No YouTube link? Paste any transcript directly |
+| **Multi-language** | Works with Hindi, Urdu, Spanish, French, and more — auto-translates to English |
+| **Long video support** | Splits long videos into chunks, processes each part, stitches results together |
+| **PDF download** | Save your notes as a clean PDF |
+
+---
+
+## Tech Stack
+
+| What | Tool | Why |
+|---|---|---|
+| UI | Streamlit | Runs in the browser, no frontend code needed |
+| Primary AI | Groq — `qwen/qwen3-32b` | Fast inference, generous free tier |
+| Fallback AI 1 | Gemini 2.5 Flash Lite | Reliable when Groq hits limits |
+| Fallback AI 2 | OpenRouter — Gemma 4 | Third safety net |
+| Transcript | youtube-transcript-api | Pulls captions directly from YouTube |
+| Audio fallback | faster-whisper + yt-dlp | Transcribes audio when captions are off |
+| Notes pipeline | LangChain | Handles chunking, prompt chaining, long videos |
+| Chat (RAG) | Chroma + HuggingFace Embeddings | Finds the right parts of the video for each question |
+| PDF | FPDF2 | Generates downloadable notes |
+| Config | python-dotenv | Keeps API keys out of code |
+
+---
+
+## How It Works
+
+```
+YouTube URL  ──►  Fetch transcript (captions or audio)
+                        │
+                  Translate to English (if needed)
+                        │
+              Split into chunks (long videos only)
+                        │
+              AI writes notes + extracts topics
+                        │
+         Read notes  /  Chat with video  /  Download PDF
+```
+
+---
+
+## Project Structure
+
+```
+YouTube-Notes/
+├── app.py                   # All UI — sidebar, buttons, pages
+├── supporting_functions.py  # All AI logic — transcript, notes, chat, PDF
+├── requirements.txt         # Python packages
+├── .env                     # Your API keys (never commit this)
+└── README.md
+```
+
+---
+
+## Setup
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/your-username/YouTube-Notes.git
+cd YouTube-Notes
+pip install -r requirements.txt
+```
+
+### 2. Create your `.env` file
+
+```env
+GOOGLE_API_KEY=your_gemini_key_here
+GROQ_API_KEY=your_groq_key_here
+OPENROUTER_API_KEY=your_openrouter_key_here
+```
+
+Get free keys from:
+- **Gemini** → [aistudio.google.com](https://aistudio.google.com)
+- **Groq** → [console.groq.com](https://console.groq.com)
+- **OpenRouter** → [openrouter.ai](https://openrouter.ai)
+
+### 3. Run
+
+```bash
+streamlit run app.py
+```
+
+Open `http://localhost:8501` in your browser.
+
+---
+
+## How to Use
+
+**Option A — YouTube URL**
+1. Paste a YouTube link in the sidebar
+2. Set the language code (`en`, `hi`, `ur`, etc.)
+3. Pick **Notes For You** or **Chat with Video**
+4. Click **Start Processing**
+
+**Option B — Paste Transcript**
+1. Switch input to **Paste Transcript**
+2. Paste your transcript text
+3. Pick your task and click **Start Processing**
+
+---
+
+## AI Fallback System
+
+The app never silently crashes on quota limits. It tries providers in this order:
+
+```
+Groq  →  Gemini  →  OpenRouter
+```
+
+If all three hit their limits, you get a clear error message explaining what happened and when to retry.
+
+---
+
+## Environment Variables
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `GOOGLE_API_KEY` | Yes | Gemini AI (fallback) |
+| `GROQ_API_KEY` | Recommended | Primary AI provider |
+| `OPENROUTER_API_KEY` | Optional | Third fallback |
+
+---
+
+## Known Limits
+
+- Videos with disabled captions use local audio transcription — slower but still works
+- Very long videos (2+ hours) take more time and more API calls
+- Free API tiers have per-minute limits — if you hit them, wait 1-2 minutes and retry
+
+---
+
+*Built for students and professionals who can't afford to rewatch an entire lecture just to find one thing.*
