@@ -145,6 +145,8 @@ def invoke_llm(chain, values: dict[str, str]) -> str:
     FALLBACK_ERRORS.clear()
     try:
         return str(chain.invoke(values).content)
+    # Broad catch is intentional: provider errors differ across LangChain
+    # integrations, and the error is re-raised unless it is a quota error.
     except Exception as error:
         message = str(error)
         fallback_errors: list[tuple[str, str]] = []
@@ -288,8 +290,14 @@ def get_transcription_model():
 def transcribe_video_audio(video_id: str, language: str = "en") -> str | None:
     """Download a video's audio temporarily and transcribe it locally."""
     try:
+        from av.error import FFmpegError
         from yt_dlp import YoutubeDL
+        from yt_dlp.utils import YoutubeDLError
+    except ImportError as error:
+        st.error(f"Could not transcribe the video audio: {error}")
+        return None
 
+    try:
         with tempfile.TemporaryDirectory() as temp_directory:
             output_template = str(Path(temp_directory) / "audio.%(ext)s")
             download_options = {
@@ -308,7 +316,14 @@ def transcribe_video_audio(video_id: str, language: str = "en") -> str | None:
             )
             transcript = " ".join(segment.text.strip() for segment in segments)
             return transcript or None
-    except (OSError, RuntimeError, ValueError) as error:
+    except (
+        FFmpegError,
+        YoutubeDLError,
+        OSError,
+        RuntimeError,
+        TypeError,
+        ValueError,
+    ) as error:
         st.error(f"Could not transcribe the video audio: {error}")
         return None
 
