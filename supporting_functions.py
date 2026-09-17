@@ -8,6 +8,10 @@ import streamlit as st
 from dotenv import load_dotenv
 from fpdf import FPDF
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import (
+    RequestBlocked,
+    YouTubeTranscriptApiException,
+)
 
 load_dotenv()
 
@@ -71,7 +75,6 @@ def build_quota_message(
 def get_llm():
     from langchain_core.callbacks import BaseCallbackHandler
     from langchain_google_genai import ChatGoogleGenerativeAI
-    from langchain_openai import ChatOpenAI
 
     def make_error_recorder(label: str) -> BaseCallbackHandler:
         class FallbackErrorRecorder(BaseCallbackHandler):
@@ -88,13 +91,17 @@ def get_llm():
 
     openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
     if openrouter_api_key:
-        openrouter_fallback = ChatOpenAI(
-            model="google/gemma-4-26b-a4b-it:free",
-            temperature=0.3,
-            base_url="https://openrouter.ai/api/v1",
-            api_key=openrouter_api_key,
-            callbacks=[make_error_recorder("OpenRouter")],
-        )
+        try:
+            from langchain_openai import ChatOpenAI
+            openrouter_fallback = ChatOpenAI(
+                model="google/gemma-4-26b-a4b-it:free",
+                temperature=0.3,
+                base_url="https://openrouter.ai/api/v1",
+                api_key=openrouter_api_key,
+                callbacks=[make_error_recorder("OpenRouter")],
+            )
+        except ImportError:
+            st.warning("langchain-openai is not installed, OpenRouter fallback is disabled.")
     else:
         st.warning(
             "OPENROUTER_API_KEY is missing. The OpenRouter fallback is disabled."
@@ -222,7 +229,7 @@ def get_transcript(video_id: str, language: str = "en") -> str | None:
             ytt_api = YouTubeTranscriptApi()
             if hasattr(ytt_api, "fetch"):
                 raw_data = ytt_api.fetch(video_id, languages=languages)
-        except (AttributeError, RuntimeError, ValueError):
+        except (AttributeError, RuntimeError, ValueError, RequestBlocked):
             pass
 
         if raw_data is None:
@@ -231,7 +238,7 @@ def get_transcript(video_id: str, language: str = "en") -> str | None:
                     raw_data = YouTubeTranscriptApi.get_transcript(
                         video_id, languages=languages
                     )
-            except (AttributeError, RuntimeError, ValueError):
+            except (AttributeError, RuntimeError, ValueError, RequestBlocked):
                 pass
 
         if not raw_data:
@@ -257,11 +264,18 @@ def get_transcript(video_id: str, language: str = "en") -> str | None:
         if len(full_transcript.split()) < 15:
             st.warning("Warning: Transcript is very short or mostly empty.")
 
-        return full_transcript
-
-    except (AttributeError, RuntimeError, ValueError) as e:
-        st.error(f"Error fetching transcript: {e}")
+    except (
+        AttributeError,
+        OSError,
+        RuntimeError,
+        TypeError,
+        ValueError,
+        YouTubeTranscriptApiException,
+    ):
+        st.warning("Could not fetch transcript. Falling back to audio transcription.")
         return None
+
+    return full_transcript
 
 
 @st.cache_resource
@@ -324,15 +338,13 @@ def get_important_topics(transcript: str, progress_callback=None) -> str:
         from langchain_core.prompts import ChatPromptTemplate
 
         prompt = """
-        You are a kind teacher explaining to a complete beginner.
-
-        From this video transcript, write the 5 most important topics.
+        You are a friendly teacher. Identify the 5 most critical core topics from this video transcript.
 
         Rules:
-        - Use VERY SIMPLE everyday words (like explaining to a 12-year-old).
-        - Each point should be 1 short easy sentence.
-        - No difficult words.
-        - Number them 1 to 5.
+        - List exactly 5 numbered points (1. to 5.).
+        - Each point must be ONE ultra-simple, crisp sentence explaining what is taught.
+        - Use simple words so anyone can immediately understand the big picture.
+        - No extra text or fluff.
 
         Transcript:
         {transcript}
@@ -361,32 +373,30 @@ def get_important_topics(transcript: str, progress_callback=None) -> str:
         return "Could not generate topics."
 
 
-# 5. Instructor-Style Detailed Notes
+# 5. Instructor-Style Detailed Notes (Spoon-Feeding & Token-Efficient Bullet Notes)
 # This prompt is shared by generate_notes(), generate_notes_and_topics(),
 # and generate_notes_from_transcript() so all paths get the same format.
 NOTES_PROMPT = """
-You are a teacher explaining a video lecture to a student.
-Write notes like a topper student would — clear, simple, and easy to understand.
+You are an expert tutor known for spoon-feeding difficult concepts to complete beginners and slow learners.
+Turn this video transcript into clear, bite-sized, bullet-pointed study notes.
 
-Rules:
-- Use simple English (no complex words)
-- Every topic gets a heading (## Topic Name)
-- Explain each concept in 2-3 short paragraphs
-- Include examples the instructor gave
-- If coding video: write code + explain each line simply
-- If instructor gave a tip or warning: mention it
-- Define new terms when they first appear
-- Only add "Extra Info" if instructor left something incomplete
+Goal:
+1. Break down every concept step-by-step so simply that anyone understands on the first read.
+2. Token-efficient: Use crisp bullet points, zero fluff, no lengthy paragraphs.
 
-Format:
-## Topic Name
-**What was said:** [1-2 lines]
-**Explanation:** [2-3 short paragraphs, simple words]
-**Example:** [from the video]
-**Code:** [if programming video]
-**Tip:** [if any]
+Format for each topic:
+## [Topic Name]
+- **Core Concept:** 1 direct, plain-English summary sentence.
+- **Spoon-Fed Breakdown:**
+  * Step 1 / Intuition in plain words.
+  * Real-world analogy (e.g., "Think of it like...").
+- **Key Takeaways:**
+  * Crucial rule, fact, or workflow step.
+  * Why it matters in practice.
+- **Example / Code:** (if applicable) Short snippet with clear 1-line explanation.
+- **Pro Tip / Pitfall:** 1 practical tip or common mistake to avoid.
 
-Keep it concise. No filler words.
+Keep every bullet under 2 short sentences. Use bold keywords for quick scanning.
 
 Transcript:
 {transcript}
